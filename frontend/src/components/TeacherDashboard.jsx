@@ -1,297 +1,229 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  getTeacherDashboard, getTeacherStudents, getScheduledExams,
-  scheduleExam, cancelScheduledExam
-} from '../api';
+import { useAuth } from '../AuthContext';
+import { getTeacherDashboard, getTeacherStudents, getScheduledExams, cancelScheduledExam, scheduleExam, getTeacherCourses } from '../api';
+import { motion } from 'framer-motion';
+import { BookOpen, Users, FileText, MessageSquare, Calendar, Plus, Trash2, Eye, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function TeacherDashboard() {
-  const [tab, setTab] = useState('overview');
-  const [stats, setStats] = useState(null);
-  const [courses, setCourses] = useState([]);
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
   const [students, setStudents] = useState([]);
   const [exams, setExams] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [examModal, setExamModal] = useState(false);
+  const [examForm, setExamForm] = useState({ course_id: '', title: '', date: '', duration: '' });
 
-  // Schedule exam form
-  const [examForm, setExamForm] = useState({
-    quiz_id: '', course_id: '', scheduled_date: '', duration_minutes: 60
-  });
-  const [examLoading, setExamLoading] = useState(false);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [dashRes, studRes, examRes] = await Promise.all([
-        getTeacherDashboard(),
-        getTeacherStudents(),
-        getScheduledExams(),
-      ]);
-      setStats(dashRes.data.stats);
-      setCourses(dashRes.data.courses);
-      setStudents(studRes.data.students);
-      setExams(examRes.data.exams);
-    } catch (err) {
-      console.error('Failed to load teacher data', err);
-    } finally {
-      setLoading(false);
-    }
+  const load = () => {
+    Promise.all([getTeacherDashboard(), getTeacherStudents(), getScheduledExams(), getTeacherCourses()])
+      .then(([d, s, e, c]) => { setData(d.data); setStudents(s.data.students); setExams(e.data.exams); setCourses(c.data.courses); })
+      .catch(console.error).finally(() => setLoading(false));
   };
+  useEffect(load, []);
 
-  const handleScheduleExam = async (e) => {
+  const handleSchedule = async (e) => {
     e.preventDefault();
-    setExamLoading(true);
-    setMessage('');
-    try {
-      await scheduleExam(examForm);
-      setMessage('Exam scheduled successfully!');
-      setExamForm({ quiz_id: '', course_id: '', scheduled_date: '', duration_minutes: 60 });
-      const res = await getScheduledExams();
-      setExams(res.data.exams);
-    } catch (err) {
-      setMessage(err.response?.data?.error || 'Failed to schedule exam');
-    } finally {
-      setExamLoading(false);
-    }
+    await scheduleExam({ ...examForm, duration: parseInt(examForm.duration) });
+    setExamModal(false); setExamForm({ course_id: '', title: '', date: '', duration: '' }); load();
   };
+  const handleCancel = async (id) => { await cancelScheduledExam(id); load(); };
 
-  const handleCancelExam = async (id) => {
-    try {
-      await cancelScheduledExam(id);
-      setExams(exams.filter(e => e.id !== id));
-      setMessage('Exam cancelled');
-    } catch (err) {
-      setMessage('Failed to cancel exam');
-    }
-  };
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="spinner" /></div>;
 
-  // Get all quizzes from courses for the schedule form
-  const allQuizzes = [];
-  courses.forEach(c => {
-    if (c.quizzes) {
-      c.quizzes.forEach(q => allQuizzes.push({ ...q, course_title: c.title, course_id: c.id }));
-    }
-  });
-
-  if (loading) return <div className="loading">Loading teacher dashboard...</div>;
+  const stats = [
+    { label: 'My Courses', value: data?.stats?.courses || 0, icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
+    { label: 'Students', value: data?.stats?.students || 0, icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Lessons', value: data?.stats?.lessons || 0, icon: FileText, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Feedbacks', value: data?.stats?.feedbacks || 0, icon: MessageSquare, color: 'text-violet-600 bg-violet-50' },
+    { label: 'Active Exams', value: exams.length, icon: Calendar, color: 'text-rose-600 bg-rose-50' },
+  ];
 
   return (
-    <div className="teacher-dashboard">
-      <div className="page-header">
-        <h1>👨‍🏫 Teacher Dashboard</h1>
-        <p>Manage your courses, students, and exams</p>
-      </div>
+    <div className="px-6 lg:px-10 py-8">
+      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Teacher Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your courses, students, and exams</p>
+      </motion.div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">{stats.total_courses}</div>
-            <div className="stat-label">My Courses</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{stats.total_students}</div>
-            <div className="stat-label">Total Students</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{stats.total_lessons}</div>
-            <div className="stat-label">Total Lessons</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{stats.feedbacks_given}</div>
-            <div className="stat-label">Feedbacks Given</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{stats.scheduled_exams}</div>
-            <div className="stat-label">Active Exams</div>
-          </div>
-        </div>
-      )}
-
-      {message && (
-        <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-          {message}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="admin-tabs">
-        <button className={`admin-tab ${tab === 'overview' ? 'active' : ''}`}
-          onClick={() => setTab('overview')}>My Courses</button>
-        <button className={`admin-tab ${tab === 'students' ? 'active' : ''}`}
-          onClick={() => setTab('students')}>Students ({students.length})</button>
-        <button className={`admin-tab ${tab === 'exams' ? 'active' : ''}`}
-          onClick={() => setTab('exams')}>Schedule Exams</button>
-      </div>
-
-      {/* Courses Tab */}
-      {tab === 'overview' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>My Courses</h3>
-            <Link to="/teacher/add-course" className="btn btn-primary">+ Add Course</Link>
-          </div>
-          {courses.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-              <p>You haven't created any courses yet.</p>
-              <Link to="/teacher/add-course" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-                Create Your First Course
-              </Link>
-            </div>
-          ) : (
-            <div className="courses-grid">
-              {courses.map(c => (
-                <div key={c.id} className="card course-card">
-                  <div className="course-card-body">
-                    <span className="badge">{c.category}</span>
-                    <h3>{c.title}</h3>
-                    <p>{c.description}</p>
-                    <div className="course-meta">
-                      <span>📚 {c.lesson_count} lessons</span>
-                      <span>📝 {c.quiz_count} quizzes</span>
-                      <span>👥 {c.student_count} students</span>
-                    </div>
-                  </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {stats.map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+            <Card>
+              <CardContent className="p-5">
+                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${s.color} mb-3`}>
+                  <s.icon className="w-5 h-5" />
                 </div>
+                <div className="text-2xl font-bold text-foreground">{s.value}</div>
+                <p className="text-sm text-muted-foreground">{s.label}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <Tabs defaultValue="courses">
+        <div className="flex items-center justify-between mb-1">
+          <TabsList>
+            <TabsTrigger value="courses">My Courses</TabsTrigger>
+            <TabsTrigger value="students">Students ({students.length})</TabsTrigger>
+            <TabsTrigger value="exams">Schedule Exams</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="courses">
+          <div className="flex justify-end mb-4">
+            <Link to="/teacher/add-course"><Button className="gap-2"><Plus className="w-4 h-4" /> Add Course</Button></Link>
+          </div>
+          {(!data?.courses || data.courses.length === 0) ? (
+            <Card><CardContent className="text-center py-10"><p className="text-sm text-muted-foreground">No courses yet.</p></CardContent></Card>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {data.courses.map((c, i) => (
+                <motion.div key={c.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                  <Link to={`/courses/${c.id}`}>
+                    <Card className="group hover:shadow-md transition-all h-full">
+                      <div className="h-1.5 bg-primary" />
+                      <CardContent className="p-5">
+                        <Badge variant="secondary" className="mb-3 text-xs">{c.category}</Badge>
+                        <h3 className="font-semibold text-foreground mb-1.5 group-hover:text-primary transition-colors">{c.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{c.description}</p>
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> {c.lesson_count}</span>
+                          <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> {c.quiz_count}</span>
+                          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {c.student_count}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Students Tab */}
-      {tab === 'students' && (
-        <div className="card">
-          {students.length === 0 ? (
-            <div className="empty-state"><p>No students enrolled in your courses yet.</p></div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Enrolled Courses</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map(s => (
-                  <tr key={s.id}>
-                    <td><strong>{s.full_name}</strong></td>
-                    <td>{s.username}</td>
-                    <td>{s.email}</td>
-                    <td>
-                      {s.enrolled_courses.map(c => (
-                        <div key={c.id} style={{ fontSize: '0.85rem' }}>
-                          {c.title} — <span style={{ color: 'var(--primary)' }}>{c.progress}%</span>
-                        </div>
-                      ))}
-                    </td>
-                    <td>
-                      <Link to={`/teacher/students/${s.id}`} className="btn btn-sm btn-primary">
-                        View Profile
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+        <TabsContent value="students">
+          <Card>
+            <CardContent className="pt-6">
+              {students.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No students enrolled yet.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Courses</TableHead>
+                      <TableHead>Lessons</TableHead>
+                      <TableHead>Quizzes</TableHead>
+                      <TableHead>Avg Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map(s => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.full_name}</TableCell>
+                        <TableCell>{s.enrolled_courses}</TableCell>
+                        <TableCell>{s.lessons_completed}</TableCell>
+                        <TableCell>{s.quizzes_taken}</TableCell>
+                        <TableCell><Badge variant="secondary">{s.avg_score}%</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <Link to={`/teacher/students/${s.id}`}>
+                            <Button variant="ghost" size="sm" className="gap-1"><Eye className="w-4 h-4" /> View</Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Schedule Exams Tab */}
-      {tab === 'exams' && (
-        <div>
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Schedule New Exam</h3>
-            {allQuizzes.length === 0 ? (
-              <p>Create a course with a quiz first to schedule exams.</p>
-            ) : (
-              <form onSubmit={handleScheduleExam}>
-                <div className="form-row">
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label>Select Quiz</label>
-                    <select value={examForm.quiz_id}
-                      onChange={e => {
-                        const q = allQuizzes.find(q => q.id === Number(e.target.value));
-                        setExamForm({ ...examForm, quiz_id: e.target.value, course_id: q ? q.course_id : '' });
-                      }} required>
-                      <option value="">-- Select Quiz --</option>
-                      {allQuizzes.map(q => (
-                        <option key={q.id} value={q.id}>{q.title} ({q.course_title})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label>Scheduled Date & Time</label>
-                    <input type="datetime-local" value={examForm.scheduled_date}
-                      onChange={e => setExamForm({ ...examForm, scheduled_date: e.target.value })} required />
-                  </div>
-                  <div className="form-group" style={{ width: '140px' }}>
-                    <label>Duration (min)</label>
-                    <input type="number" value={examForm.duration_minutes}
-                      onChange={e => setExamForm({ ...examForm, duration_minutes: e.target.value })}
-                      min="5" required />
-                  </div>
-                </div>
-                <button type="submit" className="btn btn-primary" disabled={examLoading}>
-                  {examLoading ? 'Scheduling...' : 'Schedule Exam'}
-                </button>
-              </form>
-            )}
+        <TabsContent value="exams">
+          <div className="flex justify-end mb-4">
+            <Button className="gap-2" onClick={() => setExamModal(true)}><Plus className="w-4 h-4" /> Schedule Exam</Button>
           </div>
+          <Card>
+            <CardContent className="pt-6">
+              {exams.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No exams scheduled.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {exams.map(e => (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{e.title}</TableCell>
+                        <TableCell className="text-muted-foreground">{e.course_title}</TableCell>
+                        <TableCell>{new Date(e.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{e.duration} min</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleCancel(e.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-          <h3 style={{ marginBottom: '1rem' }}>Scheduled Exams</h3>
-          <div className="card">
-            {exams.length === 0 ? (
-              <div className="empty-state"><p>No exams scheduled yet.</p></div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Quiz</th>
-                    <th>Course</th>
-                    <th>Date & Time</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {exams.map(ex => {
-                    const examDate = new Date(ex.scheduled_date);
-                    const isPast = examDate < new Date();
-                    return (
-                      <tr key={ex.id}>
-                        <td><strong>{ex.quiz_title}</strong></td>
-                        <td>{ex.course_title}</td>
-                        <td>{examDate.toLocaleString()}</td>
-                        <td>{ex.duration_minutes} min</td>
-                        <td>
-                          <span className={`badge ${isPast ? 'badge-muted' : 'badge-success'}`}>
-                            {isPast ? 'Completed' : 'Upcoming'}
-                          </span>
-                        </td>
-                        <td>
-                          {!isPast && (
-                            <button className="btn btn-sm btn-danger"
-                              onClick={() => handleCancelExam(ex.id)}>Cancel</button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Schedule Exam Dialog */}
+      <Dialog open={examModal} onOpenChange={setExamModal}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Schedule Exam</DialogTitle></DialogHeader>
+          <form onSubmit={handleSchedule} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Course</Label>
+              <select value={examForm.course_id} onChange={e => setExamForm({ ...examForm, course_id: e.target.value })} required
+                className="w-full h-9 px-3 rounded-md border bg-background text-sm">
+                <option value="">Select course</option>
+                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Exam Title</Label>
+              <Input placeholder="e.g., Midterm Exam" value={examForm.title} onChange={e => setExamForm({ ...examForm, title: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input type="date" value={examForm.date} onChange={e => setExamForm({ ...examForm, date: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Duration (min)</Label>
+                <Input type="number" placeholder="60" value={examForm.duration} onChange={e => setExamForm({ ...examForm, duration: e.target.value })} required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setExamModal(false)}>Cancel</Button>
+              <Button type="submit">Schedule</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,99 +1,97 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminActivityLog } from '../api';
+import { motion } from 'framer-motion';
+import { ChevronLeft, LogIn, UserPlus, BookOpen, CheckCircle, FileText, MessageSquare, Calendar, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const actionIcons = {
+  login: LogIn, registered: UserPlus, enrolled: BookOpen, lesson_completed: CheckCircle,
+  quiz_completed: FileText, course_created: BookOpen, feedback_given: MessageSquare, exam_scheduled: Calendar,
+};
 
 export default function AdminActivityLog() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    getAdminActivityLog()
-      .then((res) => setActivities(res.data.activities))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    getAdminActivityLog().then(res => setActivities(res.data.activities)).catch(console.error).finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === 'all'
-    ? activities
-    : activities.filter((a) => a.role === filter);
+  const studentActs = activities.filter(a => a.role === 'student');
+  const teacherActs = activities.filter(a => a.role === 'teacher');
 
-  const actionIcon = (action) => {
-    switch (action) {
-      case 'login': return '🔑';
-      case 'registered': return '🆕';
-      case 'enrolled': return '📚';
-      case 'lesson_completed': return '✅';
-      case 'quiz_completed': return '📝';
-      case 'course_created': return '📖';
-      case 'feedback_given': return '💬';
-      case 'exam_scheduled': return '📋';
-      default: return '📌';
-    }
-  };
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="spinner" /></div>;
 
-  if (loading) return <div className="loading">Loading activity log...</div>;
+  const ActivityTable = ({ data }) => (
+    data.length === 0 ? (
+      <div className="text-center py-10">
+        <Activity className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+      </div>
+    ) : (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Activity</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Date & Time</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map(a => {
+            const Icon = actionIcons[a.action] || Activity;
+            return (
+              <TableRow key={a.id}>
+                <TableCell>
+                  <Link to={`/admin/users/${a.user_id}`} className="font-medium text-primary hover:underline">{a.full_name}</Link>
+                  <p className="text-xs text-muted-foreground">@{a.username}</p>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="capitalize">{a.role}</Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    {a.action.replace('_', ' ')}
+                  </span>
+                </TableCell>
+                <TableCell className="text-muted-foreground max-w-[200px] truncate">{a.description}</TableCell>
+                <TableCell className="text-muted-foreground whitespace-nowrap">{a.timestamp ? new Date(a.timestamp).toLocaleString() : ''}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    )
+  );
 
   return (
-    <div className="admin-activity-log">
-      <div className="page-header">
-        <Link to="/admin" className="btn btn-outline btn-sm">← Back to Admin</Link>
-        <h1>📊 Activity Log</h1>
-        <p>Login and activity history of all teachers and students</p>
-      </div>
+    <div className="px-6 lg:px-10 py-8">
+      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <Link to="/admin">
+          <Button variant="ghost" size="sm" className="gap-1 mb-4 text-muted-foreground"><ChevronLeft className="w-4 h-4" /> Back to Admin</Button>
+        </Link>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Activity Log</h1>
+        <p className="text-sm text-muted-foreground mt-1">Login and activity history of all users</p>
+      </motion.div>
 
-      {/* Filter Tabs */}
-      <div className="admin-tabs">
-        <button className={`admin-tab ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}>All ({activities.length})</button>
-        <button className={`admin-tab ${filter === 'student' ? 'active' : ''}`}
-          onClick={() => setFilter('student')}>Students ({activities.filter(a => a.role === 'student').length})</button>
-        <button className={`admin-tab ${filter === 'teacher' ? 'active' : ''}`}
-          onClick={() => setFilter('teacher')}>Teachers ({activities.filter(a => a.role === 'teacher').length})</button>
-      </div>
-
-      <div className="card">
-        {filtered.length === 0 ? (
-          <div className="empty-state"><p>No activity recorded yet.</p></div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Activity</th>
-                <th>Description</th>
-                <th>Date & Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id}>
-                  <td>
-                    <Link to={`/admin/users/${a.user_id}`} style={{ fontWeight: 600 }}>
-                      {a.full_name}
-                    </Link>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{a.username}</div>
-                  </td>
-                  <td>
-                    <span className={`badge ${a.role === 'teacher' ? 'badge-teacher' : ''}`}>
-                      {a.role}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ marginRight: '0.5rem' }}>{actionIcon(a.action)}</span>
-                    {a.action.replace('_', ' ')}
-                  </td>
-                  <td>{a.description}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {a.timestamp ? new Date(a.timestamp).toLocaleString() : ''}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <Tabs defaultValue="all">
+        <TabsList>
+          <TabsTrigger value="all">All ({activities.length})</TabsTrigger>
+          <TabsTrigger value="students">Students ({studentActs.length})</TabsTrigger>
+          <TabsTrigger value="teachers">Teachers ({teacherActs.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all"><Card><CardContent className="pt-6"><ActivityTable data={activities} /></CardContent></Card></TabsContent>
+        <TabsContent value="students"><Card><CardContent className="pt-6"><ActivityTable data={studentActs} /></CardContent></Card></TabsContent>
+        <TabsContent value="teachers"><Card><CardContent className="pt-6"><ActivityTable data={teacherActs} /></CardContent></Card></TabsContent>
+      </Tabs>
     </div>
   );
 }

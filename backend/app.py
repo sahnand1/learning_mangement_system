@@ -43,7 +43,7 @@ if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
 
 db = SQLAlchemy(app)
 
-ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:5174').split(',')
+ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177').split(',')
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])

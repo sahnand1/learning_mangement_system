@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getCourse, enrollCourse } from '../api';
 import { useAuth } from '../AuthContext';
+import { motion } from 'framer-motion';
+import { ChevronLeft, BookOpen, FileText, Users, GraduationCap, CheckCircle, Play, Lock, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -12,119 +20,131 @@ export default function CourseDetail() {
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
-    getCourse(id)
-      .then((res) => setCourse(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    getCourse(id).then(res => setCourse(res.data)).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
   const handleEnroll = async () => {
-    if (!user) { navigate('/login'); return; }
+    if (!user) return navigate('/login');
     setEnrolling(true);
-    try {
-      await enrollCourse(id);
-      setCourse({ ...course, is_enrolled: true });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setEnrolling(false);
-    }
+    try { await enrollCourse(id); setCourse(prev => ({ ...prev, is_enrolled: true, progress: 0 })); }
+    catch (err) { console.error(err); } finally { setEnrolling(false); }
   };
 
-  if (loading) return <div className="loading">Loading course...</div>;
-  if (!course) return <div className="error-msg">Course not found</div>;
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="spinner" /></div>;
+  if (!course) return <div className="text-center py-16 text-muted-foreground">Course not found.</div>;
 
   return (
-    <div className="course-detail">
-      <div className="course-detail-header">
-        <div>
-          <span className="badge">{course.category}</span>
-          <h1>{course.title}</h1>
-          <p className="course-desc">{course.description}</p>
-          <div className="course-meta">
-            <span>👨‍🏫 {course.instructor_name}</span>
-            <span>📖 {course.lesson_count} lessons</span>
-            <span>👥 {course.student_count} students</span>
-          </div>
-        </div>
-        <div className="course-actions">
-          {course.is_enrolled ? (
-            <>
-              <div className="progress-info">
-                <div className="progress-bar-container large">
-                  <div className="progress-bar" style={{ width: `${course.progress}%` }} />
+    <div className="px-6 lg:px-10 py-8 max-w-5xl">
+      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
+        <Link to="/courses">
+          <Button variant="ghost" size="sm" className="gap-1 mb-4 text-muted-foreground"><ChevronLeft className="w-4 h-4" /> Back to Courses</Button>
+        </Link>
+
+        <Card className="mb-6">
+          <CardContent className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row gap-6 justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="secondary">{course.category}</Badge>
+                  {course.is_enrolled && <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 gap-1"><CheckCircle className="w-3 h-3" /> Enrolled</Badge>}
                 </div>
-                <span>{course.progress}% complete</span>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight mb-2">{course.title}</h1>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{course.description}</p>
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> {course.instructor_name}</span>
+                  <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {course.lessons?.length || 0} lessons</span>
+                  <span className="flex items-center gap-1.5"><FileText className="w-4 h-4" /> {course.quizzes?.length || 0} quizzes</span>
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {course.student_count} students</span>
+                </div>
               </div>
-              {course.lessons && course.lessons.length > 0 && (
-                <Link to={`/lessons/${course.lessons[0].id}`}
-                  className="btn btn-primary">
-                  {course.progress > 0 ? 'Continue Learning' : 'Start Course'}
-                </Link>
-              )}
-            </>
-          ) : user && user.role === 'student' ? (
-            <button onClick={handleEnroll} className="btn btn-primary btn-lg"
-              disabled={enrolling}>
-              {enrolling ? 'Enrolling...' : 'Enroll Now — Free'}
-            </button>
-          ) : user && (user.role === 'admin' || user.role === 'teacher') ? (
-            <div className="alert" style={{ background: '#f1f5f9', color: 'var(--text-muted)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-              {user.role === 'admin' ? '🛡️ Admins cannot enroll in courses' : '👨‍🏫 Teachers cannot enroll in courses'}
-            </div>
-          ) : (
-            <button onClick={handleEnroll} className="btn btn-primary btn-lg"
-              disabled={enrolling}>
-              {enrolling ? 'Enrolling...' : 'Enroll Now — Free'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="course-content-grid">
-        <div className="card">
-          <h3>📖 Lessons ({course.lessons?.length || 0})</h3>
-          <ul className="lesson-list">
-            {(course.lessons || []).map((lesson, idx) => {
-              const completed = (course.completed_lesson_ids || []).includes(lesson.id);
-              return (
-                <li key={lesson.id} className={`lesson-item ${completed ? 'completed' : ''}`}>
-                  <span className="lesson-number">{idx + 1}</span>
-                  <div className="lesson-info">
-                    <strong>{lesson.title}</strong>
-                    <small>{lesson.duration_minutes} min</small>
+              <div className="flex flex-col gap-3 sm:items-end sm:min-w-[180px]">
+                {course.is_enrolled ? (
+                  <div className="w-full">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-bold text-primary">{course.progress}%</span>
+                    </div>
+                    <Progress value={course.progress} className="h-2.5" />
                   </div>
-                  {completed && <span className="check">✅</span>}
-                  {course.is_enrolled && (
-                    <Link to={`/lessons/${lesson.id}`} className="btn btn-sm btn-outline">
-                      {completed ? 'Review' : 'Start'}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        <div className="card">
-          <h3>📝 Quizzes ({course.quizzes?.length || 0})</h3>
-          <ul className="quiz-list">
-            {(course.quizzes || []).map((quiz) => (
-              <li key={quiz.id} className="quiz-item">
-                <div>
-                  <strong>{quiz.title}</strong>
-                  <small>{quiz.question_count} questions · Pass: {quiz.pass_percentage}%</small>
-                </div>
-                {course.is_enrolled && (
-                  <Link to={`/quizzes/${quiz.id}`} className="btn btn-sm btn-primary">
-                    Take Quiz
-                  </Link>
+                ) : (
+                  <Button onClick={handleEnroll} disabled={enrolling} className="gap-2 w-full sm:w-auto">
+                    {enrolling ? 'Enrolling...' : 'Enroll Now'} <ArrowRight className="w-4 h-4" />
+                  </Button>
                 )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Lessons */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <Card className="mb-6">
+          <CardHeader><CardTitle>Lessons</CardTitle></CardHeader>
+          <CardContent>
+            {(!course.lessons || course.lessons.length === 0) ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No lessons available yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {course.lessons.map((lesson, i) => {
+                  const completed = lesson.is_completed;
+                  const accessible = course.is_enrolled;
+                  return (
+                    <div key={lesson.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${accessible ? 'hover:bg-accent/50 cursor-pointer' : 'opacity-60'}`}
+                      onClick={() => accessible && navigate(`/lessons/${lesson.id}`)}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold
+                          ${completed ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                          {completed ? <CheckCircle className="w-4 h-4" /> : i + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{lesson.title}</p>
+                          {lesson.duration && <p className="text-xs text-muted-foreground">{lesson.duration} min</p>}
+                        </div>
+                      </div>
+                      {accessible ? <Play className="w-4 h-4 text-muted-foreground" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Quizzes */}
+      {course.quizzes && course.quizzes.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <Card>
+            <CardHeader><CardTitle>Quizzes</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {course.quizzes.map((quiz) => (
+                  <div key={quiz.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-violet-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{quiz.title}</p>
+                        <p className="text-xs text-muted-foreground">{quiz.question_count} questions · Pass: {quiz.pass_percentage}%</p>
+                      </div>
+                    </div>
+                    {course.is_enrolled && (
+                      <Link to={`/quizzes/${quiz.id}`}>
+                        <Button size="sm" variant="outline" className="gap-1">
+                          {quiz.is_attempted ? 'Retake' : 'Start'} <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }
