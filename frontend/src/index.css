@@ -453,36 +453,61 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .landing-nav-inner {
+    padding: 0 1rem;
+    height: 60px;
+  }
   .landing-hero {
-    padding: 2rem 1.5rem 3rem;
+    padding: 2rem 1.25rem 2rem;
     min-height: auto;
   }
   .landing-hero-content {
     flex-direction: column;
     text-align: center;
+    gap: 2rem;
   }
   .landing-hero-left {
     max-width: 100%;
   }
   .landing-brand {
-    font-size: 3rem;
+    font-size: 2.5rem;
+  }
+  .landing-brand-emoji {
+    font-size: 2rem;
   }
   .landing-tagline {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+  }
+  .landing-subtitle {
+    font-size: 0.95rem;
   }
   .landing-cta-row {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+  .landing-cta-primary,
+  .landing-cta-secondary {
+    padding: 0.7rem 1.6rem;
+    font-size: 0.88rem;
   }
   .landing-arrow {
     display: none;
   }
   .landing-image-grid {
     width: 100%;
-    height: 300px;
+    height: 260px;
+    gap: 8px;
   }
   .landing-stats-inner {
     flex-wrap: wrap;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    padding: 2rem 1.25rem;
+  }
+  .landing-stat-number {
+    font-size: 1.4rem;
+  }
+  .landing-stat-label {
+    font-size: 0.78rem;
   }
   .landing-stat-divider {
     display: none;
@@ -582,10 +607,25 @@ body {
     grid-template-columns: 1fr;
   }
   .landing-section-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
+  }
+  .landing-section-desc {
+    font-size: 0.92rem;
   }
   .landing-section-inner {
-    padding: 3rem 1.5rem;
+    padding: 2.5rem 1.25rem;
+  }
+  .landing-section-badge {
+    font-size: 0.72rem;
+  }
+  .landing-feature-card {
+    padding: 1.5rem;
+  }
+  .landing-feature-card h3 {
+    font-size: 1rem;
+  }
+  .landing-feature-card p {
+    font-size: 0.85rem;
   }
 }
 
@@ -644,11 +684,25 @@ body {
   .landing-steps {
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
+  }
+  .landing-step {
+    padding: 0 1rem;
+  }
+  .landing-step-number {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+  .landing-step h3 {
+    font-size: 1rem;
+  }
+  .landing-step p {
+    font-size: 0.85rem;
   }
   .landing-step-connector {
     width: 2px;
-    height: 40px;
+    height: 30px;
     background: linear-gradient(to bottom, rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.08));
     margin-top: 0;
   }
@@ -722,6 +776,12 @@ body {
 @media (max-width: 768px) {
   .landing-testimonials-grid {
     grid-template-columns: 1fr;
+  }
+  .landing-testimonial-card {
+    padding: 1.5rem;
+  }
+  .landing-testimonial-card > p {
+    font-size: 0.88rem;
   }
 }
 
@@ -842,14 +902,19 @@ body {
   .landing-footer-inner {
     flex-direction: column;
     gap: 2rem;
+    padding: 2.5rem 1.25rem 1.5rem;
   }
   .landing-footer-bottom {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
+    padding: 1.25rem 1.25rem;
   }
   .landing-cta-banner h2 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
+  }
+  .landing-cta-banner p {
+    font-size: 0.92rem;
   }
 }
 
@@ -861,6 +926,7 @@ body {
   min-height: 100vh;
   background: #1a1e2b;
   color: #e2e8f0;
+  overflow-x: hidden;
 }
 .legal-nav {
   position: sticky;
@@ -974,8 +1040,16 @@ body {
 }
 
 @media (max-width: 768px) {
-  .legal-container { padding: 2rem 1.5rem 3rem; }
-  .legal-header h1 { font-size: 1.8rem; }
+  .legal-container { padding: 1.5rem 1.25rem 2.5rem; }
+  .legal-header h1 { font-size: 1.6rem; }
+  .legal-header { margin-bottom: 2rem; padding-bottom: 1.5rem; }
+  .legal-content h2 { font-size: 1.15rem; }
+  .legal-content h3 { font-size: 0.95rem; }
+  .legal-content p { font-size: 0.9rem; }
+  .legal-content ul { margin-left: 1rem; }
+  .legal-content li { font-size: 0.88rem; }
+  .legal-contact-box { padding: 1rem 1.25rem; }
+  .legal-nav-inner { padding: 0 1.25rem; }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1231,9 +1305,45 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .about-hero-title { font-size: 2rem; }
+  .about-hero-title { font-size: 1.75rem; }
+  .about-hero-desc { font-size: 0.95rem; }
   .about-values-grid { grid-template-columns: 1fr; }
+  .about-value-card { padding: 1.5rem; }
+  .about-value-card h3 { font-size: 1.05rem; }
+  .about-value-card p { font-size: 0.88rem; }
   .about-offer-grid { grid-template-columns: 1fr; }
-  .contact-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .about-offer-item { padding: 1.25rem; gap: 1rem; }
+  .about-offer-item h4 { font-size: 0.95rem; }
+  .about-offer-item p { font-size: 0.85rem; }
+  .contact-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .contact-form-row { grid-template-columns: 1fr; }
+  .contact-form-wrapper { padding: 1.5rem; }
+  .contact-form h3 { font-size: 1.05rem; margin-bottom: 1.25rem; }
+  .contact-info-card { padding: 1.25rem; }
+  .contact-field input,
+  .contact-field textarea { padding: 0.65rem 0.85rem; font-size: 0.88rem; }
+  .contact-submit-btn { width: 100%; justify-content: center; }
+}
+
+/* Ultra-small screens */
+@media (max-width: 374px) {
+  .landing-nav-inner { padding: 0 0.75rem; }
+  .landing-brand { font-size: 2rem; }
+  .landing-brand-emoji { font-size: 1.5rem; }
+  .landing-tagline { font-size: 1.1rem; }
+  .landing-subtitle { font-size: 0.88rem; }
+  .landing-cta-row { flex-direction: column; align-items: center; }
+  .landing-cta-primary,
+  .landing-cta-secondary { width: 100%; text-align: center; }
+  .landing-hero { padding: 1.5rem 1rem 1.5rem; }
+  .landing-section-inner { padding: 2rem 1rem; }
+  .landing-section-title { font-size: 1.3rem; }
+  .landing-image-grid { height: 220px; }
+  .about-hero-title { font-size: 1.5rem; }
+  .legal-container { padding: 1.25rem 1rem 2rem; }
+  .legal-header h1 { font-size: 1.4rem; }
+  .legal-content h2 { font-size: 1.05rem; }
+  .legal-content ul { margin-left: 0.75rem; }
+  .contact-form-wrapper { padding: 1.25rem; }
+  .landing-footer-inner { padding: 2rem 1rem 1rem; }
 }
