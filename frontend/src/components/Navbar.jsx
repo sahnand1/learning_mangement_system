@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { GraduationCap, BookOpen, LayoutDashboard, BarChart3, Shield, Menu, X, LogOut, Activity, ChevronRight, Library } from 'lucide-react';
+import { GraduationCap, BookOpen, LayoutDashboard, BarChart3, Shield, Menu, X, LogOut, Activity, ChevronRight, Library, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,23 +15,26 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => { await logout(); navigate('/login'); };
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path) => path === '/' ? location.pathname === '/' : (location.pathname === path || location.pathname.startsWith(path + '/'));
 
   const navLinks = user ? (
     user.role === 'admin' ? [
+      { to: '/', label: 'Home', icon: Home },
       { to: '/admin', label: 'Dashboard', icon: Shield },
       { to: '/courses', label: 'Courses', icon: BookOpen },
       { to: '/admin/activity', label: 'Activity', icon: Activity },
     ] : user.role === 'teacher' ? [
+      { to: '/', label: 'Home', icon: Home },
       { to: '/teacher', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/courses', label: 'Courses', icon: BookOpen },
     ] : [
+      { to: '/', label: 'Home', icon: Home },
       { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/courses', label: 'Courses', icon: BookOpen },
       { to: '/my-courses', label: 'My Courses', icon: Library },
       { to: '/performance', label: 'Performance', icon: BarChart3 },
     ]
-  ) : [{ to: '/courses', label: 'Courses', icon: BookOpen }];
+  ) : [{ to: '/', label: 'Home', icon: Home }, { to: '/courses', label: 'Courses', icon: BookOpen }];
 
   const homeLink = user ? (user.role === 'admin' ? '/admin' : user.role === 'teacher' ? '/teacher' : '/dashboard') : '/courses';
 
@@ -40,7 +43,7 @@ export default function Navbar() {
     <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[220px] z-50 rounded-r-2xl"
       style={{ background: '#1e293b' }}>
       {/* Logo */}
-      <Link to={homeLink} className="flex items-center gap-3 px-6 pt-7 pb-6">
+      <Link to="/" className="flex items-center gap-3 px-6 pt-7 pb-6">
         <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
           <GraduationCap className="w-10 h-10 text-white" />
         </div>
@@ -105,7 +108,7 @@ export default function Navbar() {
   const mobileBar = (
     <div className="md:hidden sticky top-0 z-50 border-b" style={{ background: '#1e293b' }}>
       <div className="flex items-center justify-between px-4 h-14">
-        <Link to={homeLink} className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-4 h-4 text-white" />
           </div>

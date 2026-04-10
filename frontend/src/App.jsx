@@ -15,6 +15,11 @@ import AdminActivityLog from './components/AdminActivityLog';
 import TeacherDashboard from './components/TeacherDashboard';
 import AddCourse from './components/AddCourse';
 import StudentProfile from './components/StudentProfile';
+import LandingPage from './components/LandingPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
+import About from './components/About';
+import Contact from './components/Contact';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -40,7 +45,42 @@ function TeacherRoute({ children }) {
 
 function App() {
   const location = useLocation();
+  const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isLegalPage = location.pathname === '/privacy-policy' || location.pathname === '/terms-and-conditions';
+  const isPublicPage = location.pathname === '/about' || location.pathname === '/contact';
+
+  if (isLandingPage) {
+    return (
+      <main>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+        </Routes>
+      </main>
+    );
+  }
+
+  if (isLegalPage) {
+    return (
+      <main>
+        <Routes>
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        </Routes>
+      </main>
+    );
+  }
+
+  if (isPublicPage) {
+    return (
+      <main>
+        <Routes>
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+        </Routes>
+      </main>
+    );
+  }
 
   if (isAuthPage) {
     return (
@@ -76,7 +116,7 @@ function App() {
             <Route path="/teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
             <Route path="/teacher/add-course" element={<TeacherRoute><AddCourse /></TeacherRoute>} />
             <Route path="/teacher/students/:id" element={<TeacherRoute><StudentProfile /></TeacherRoute>} />
-            <Route path="/" element={<Navigate to="/courses" />} />
+            <Route path="/" element={<LandingPage />} />
           </Routes>
         </div>
       </main>
